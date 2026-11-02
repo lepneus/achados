@@ -9,12 +9,13 @@ if(!grid)return;
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const money=n=>"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const productsHTML=rows.map(([title,price,previous,shortId,itemId,category,picture])=>{
- const image=picture.startsWith("https://")?picture:"https://http2.mlstatic.com/"+picture;
+ const image=picture.startsWith("https://")?picture:"https://http2.mlstatic.com/"+picture.replace(/^D_Q_NP_(?:2X_)?/,"D_NQ_NP_").replace(/-R(?:-[^.]+)?\.webp$/,"-O.webp");
+ const thumbnail=picture.startsWith("https://")?picture:"https://http2.mlstatic.com/"+picture;
  const photo=esc(image),name=esc(title),href="https://meli.la/"+shortId;
  const discount=previous&&previous>price?Math.round((1-price/previous)*100):0;
  return '<article class="card offer-nov2026" data-category="'+category+'" data-item-id="MLB'+itemId+'" data-search="'+esc((title+" "+category+" MLB"+itemId).toLocaleLowerCase("pt-BR"))+'">'+
  '<div class="photo" tabindex="0" role="button" aria-label="Ampliar foto de '+name+'" data-gallery="'+photo+'">'+
- '<span class="badge">'+(discount?discount+'% OFF':'Mercado Livre')+'</span><img src="'+photo+'" alt="'+name+'" loading="lazy" decoding="async"></div>'+
+ '<span class="badge">'+(discount?discount+'% OFF':'Mercado Livre')+'</span><img src="'+photo+'" alt="'+name+'" loading="lazy" decoding="async" data-fallback="'+esc(thumbnail)+'"></div>'+
  '<div class="body"><div class="store">Mercado Livre</div><h3 class="name">'+name+'</h3>'+
  (discount?'<div class="old-price">'+money(previous)+'</div>':'')+
  '<div class="price">'+money(price)+'</div><a class="buy" href="'+href+'" target="_blank" rel="nofollow sponsored noopener noreferrer">Ver oferta</a></div></article>';
@@ -60,8 +61,9 @@ grid.querySelectorAll(".offer-nov2026 .photo").forEach(photo=>{
 const img=photo.querySelector("img");
 let fallbackStage=0;
 img.addEventListener("error",()=>{
- if(fallbackStage===0 && img.src.includes("http2.mlstatic.com/D_Q_NP_")){fallbackStage=1;img.src=img.src.replace("/D_Q_NP_","/D_NQ_NP_");photo.dataset.gallery=img.src;return}
- fallbackStage=2;img.src=fallBackImage;photo.dataset.gallery=fallBackImage;
+ if(fallbackStage===0 && img.src.includes("http2.mlstatic.com/D_NQ_NP_")){fallbackStage=1;img.src=img.src.replace(/-O\.webp(?:\?.*)?$/,"-F.webp");photo.dataset.gallery=img.src;return}
+ if(fallbackStage<=1 && img.dataset.fallback && img.src!==img.dataset.fallback){fallbackStage=2;img.src=img.dataset.fallback;photo.dataset.gallery=img.src;return}
+ fallbackStage=3;img.src=fallBackImage;photo.dataset.gallery=fallBackImage;
 });
 photo.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();photo.click()}});
 });
